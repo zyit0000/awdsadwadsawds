@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 # Opiumware v2.2.4 (Optimized & Fixed)
+# Developed by @norbyv1
 
 set -euo pipefail
 IFS=$'\n\t'
@@ -20,7 +21,7 @@ INFO="${CYAN}➜${NC}"
 WARN="${YELLOW}⚠${NC}"
 
 # --- Configuration ---
-DYLIB_URL="https://x099xkycxe.ufs.sh/f/ar75CUBjeUn9zvSNZN71NMWOXBTIwjKh0pvSDLcxH6FERayu"
+DYLIB_URL="https://x099xkycxe.ufs.sh/f/ar75CUBjeUn9XAxLsaTNtgWaiOBJXYsTUb2xuCSvQ8H3MLwG"
 MODULES_URL="https://x099xkycxe.ufs.sh/f/ar75CUBjeUn9zb5N2U71NMWOXBTIwjKh0pvSDLcxH6FERayu"
 UI_URL="https://q3p1xj20dh.ufs.sh/f/BrzckOVD7pCZXic4yblOrXx5SwcQKWkvE8P629ny4DmGCYVA"
 
@@ -35,7 +36,6 @@ else
 fi
 
 TEMP="$(mktemp -d)"
-# Cleanup temp on exit
 trap 'rm -rf "$TEMP"' EXIT
 
 # --- Functions ---
@@ -57,7 +57,7 @@ spinner() {
 banner() {
     clear
     echo -e "${CYAN}${BOLD}== Opiumware (Intel) Installer ==${NC}"
-    echo -e "${BLUE}Developed by @norbyv1${NC}\n"
+    echo -e "${BLUE}Developed by @norbyv1 | Fixed version${NC}\n"
 }
 
 section() {
@@ -78,10 +78,10 @@ main() {
         fi
     done
 
-    rm -rf ~/Opiumware/modules/LuauLSP ~/Opiumware/modules/decompiler
+    rm -rf ~/Opiumware/modules/LuauLSP ~/Opiumware/modules/decompiler 2>/dev/null || true
 
     section "Fetching version info"
-    local roblox_version="version-0b2afd6436e74a1f"  
+    local roblox_version="version-08d2b9589bf14135"  
     echo -e "${INFO} Target: ${BOLD}$roblox_version${NC}"
 
     section "Downloading & Extracting Roblox"
@@ -89,7 +89,6 @@ main() {
         curl -sL "https://setup.rbxcdn.com/mac/$roblox_version-RobloxPlayer.zip" -o "$TEMP/RobloxPlayer.zip"
         unzip -oq "$TEMP/RobloxPlayer.zip" -d "$TEMP"
         mv "$TEMP/RobloxPlayer.app" "$APP_DIR/Roblox.app"
-        # Removing quarantine bits is essential for unsigned/modified apps
         xattr -rd com.apple.quarantine "$APP_DIR/Roblox.app" 2>/dev/null || true
     ) & spinner "Downloading Roblox" $!
 
@@ -116,10 +115,14 @@ main() {
         
         # Support Folders
         mkdir -p ~/Opiumware/{workspace,autoexec,themes,modules/decompiler,modules/LuauLSP}
-        [ -f "$TEMP/Resources/decompiler" ] && mv "$TEMP/Resources/decompiler" ~/Opiumware/modules/decompiler/Decompiler
+        if [ -f "$TEMP/Resources/Decompiler" ]; then
+            mv "$TEMP/Resources/Decompiler" ~/Opiumware/modules/decompiler/Decompiler
+        elif [ -f "$TEMP/Resources/decompiler" ]; then
+            mv "$TEMP/Resources/decompiler" ~/Opiumware/modules/decompiler/Decompiler
+        fi
         [ -f "$TEMP/Resources/LuauLSP" ] && mv "$TEMP/Resources/LuauLSP" ~/Opiumware/modules/LuauLSP/LuauLSP
 
-        # Local Ad-hoc Signing (Crucial for M1/Intel compatibility)
+        # Local Ad-hoc Signing
         codesign --force --deep --sign - "$APP_DIR/Roblox.app" 2>/dev/null || true
         codesign --force --deep --sign - "$APP_DIR/Opiumware.app" 2>/dev/null || true
         
@@ -136,3 +139,4 @@ main() {
 }
 
 main
+
