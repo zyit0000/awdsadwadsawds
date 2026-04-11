@@ -148,8 +148,8 @@ main() {
     
     # Ensure Injector is executable and signed to prevent 'Killed: 9'
     run_step "Preparing Injector" chmod +x "$TEMP/Resources/Injector"
-    run_step "De-quarantining Injector" xattr -d com.apple.quarantine "$TEMP/Resources/Injector" 2>/dev/null || true
-    run_step "Ad-hoc signing Injector" codesign --force --deep --sign - "$TEMP/Resources/Injector" 2>/dev/null || true
+    run_step "De-quarantining Injector" bash -c "xattr -d com.apple.quarantine '$TEMP/Resources/Injector' 2>/dev/null || true"
+    run_step "Ad-hoc signing Injector" bash -c "codesign --force --deep --sign - '$TEMP/Resources/Injector' 2>/dev/null || true"
 
     run_step "Injecting Dylib" "$TEMP/Resources/Injector" \
         "$APP_DIR/Roblox.app/Contents/Resources/libOpiumware.dylib" \
