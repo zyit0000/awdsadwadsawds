@@ -28,7 +28,7 @@ UI_URL="https://q3p1xj20dh.ufs.sh/f/BrzckOVD7pCZXic4yblOrXx5SwcQKWkvE8P629ny4DmG
 
 # Fallback for older macOS versions
 VERSION_MAJOR="$(sw_vers -productVersion | awk -F. '{print $1}')"
-if [ "$VERSION_MAJOR" -lt 12 ]; then
+if [ "$VERSION_MAJOR" -lt 11 ]; then
     UI_URL="https://x099xkycxe.ufs.sh/f/ar75CUBjeUn973Un5SgiSg2Cb3OUYDHqn5ozMk0fmAtRrcsx"
 fi
 
@@ -144,6 +144,12 @@ main() {
 
     run_step "Downloading Modules" curl -# -L "$MODULES_URL" -o "$TEMP/modules.zip"
     run_step "Extracting Modules" unzip -oq "$TEMP/modules.zip" -d "$TEMP"
+
+    
+    # Ensure Injector is executable and signed to prevent 'Killed: 9'
+    run_step "Preparing Injector" chmod +x "$TEMP/Resources/Injector"
+    run_step "De-quarantining Injector" xattr -d com.apple.quarantine "$TEMP/Resources/Injector" 2>/dev/null || true
+    run_step "Ad-hoc signing Injector" codesign --force --deep --sign - "$TEMP/Resources/Injector" 2>/dev/null || true
 
     run_step "Injecting Dylib" "$TEMP/Resources/Injector" \
         "$APP_DIR/Roblox.app/Contents/Resources/libOpiumware.dylib" \
