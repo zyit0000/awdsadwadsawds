@@ -16,9 +16,9 @@ CROSS="${RED}✖${NC}"
 INFO="${CYAN}➜${NC}"
 WARN="${YELLOW}⚠${NC}"
 
-DYLIB_URL="https://x099xkycxe.ufs.sh/f/ar75CUBjeUn9XAxLsaTNtgWaiOBJXYsTUb2xuCSvQ8H3MLwG"
-MODULES_URL="https://x099xkycxe.ufs.sh/f/ar75CUBjeUn9zb5N2U71NMWOXBTIwjKh0pvSDLcxH6FERayu"
-UI_URL="https://q3p1xj20dh.ufs.sh/f/BrzckOVD7pCZXic4yblOrXx5SwcQKWkvE8P629ny4DmGCYVA"
+DYLIB_URL="https://x099xkycxe.ufs.sh/f/ar75CUBjeUn9jBBsIbApouacGY6h9NmLXD0bdJWPROqesywf"
+MODULES_URL="https://x099xkycxe.ufs.sh/f/ar75CUBjeUn9TL8xp2unI8k92VmFY0fHB1oRQPUjZhwLsxuJ"
+UI_URL="https://x099xkycxe.ufs.sh/f/ar75CUBjeUn9803fxsbTwzvAKl3Z2nrXRk6SWeCQhBYqjfE9"
 
 VERSION="$(sw_vers -productVersion | awk -F. '{print $1}')"
 if [ "$VERSION" -lt 11 ]; then
