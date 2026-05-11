@@ -16,7 +16,7 @@ CROSS="${RED}✖${NC}"
 INFO="${CYAN}➜${NC}"
 WARN="${YELLOW}⚠${NC}"
 
-# Default Fallback URLs
+# Fallbacks
 DYLIB_URL="https://x099xkycxe.ufs.sh/f/ar75CUBjeUn9suoxx7NRLpwIiVkxYvTUQnAuFbGoSEH1tPMO"
 MODULES_URL="https://x099xkycxe.ufs.sh/f/ar75CUBjeUn9xXaWrFvIpMwWQxsnHTt2V4BR3zyoFfE0AGjZ"
 UI_URL="https://x099xkycxe.ufs.sh/f/ar75CUBjeUn9T4nznlunI8k92VmFY0fHB1oRQPUjZhwLsxuJ"
@@ -107,7 +107,7 @@ install_dylib() {
     download_file "$DYLIB_URL" "$archive" || return 1
     if unzip -tq "$archive" >/dev/null 2>&1; then
         extract_zip "$archive" "$TEMP" || return 1
-        mv "$TEMP/libOpiumware.dylib" "$target" || return 1
+        mv "$TEMP/"*.dylib "$target" 2>/dev/null || mv "$TEMP/libOpiumware.dylib" "$target" || return 1
     else
         mv "$archive" "$target" || return 1
     fi
@@ -118,7 +118,6 @@ download_roblox() {
     extract_zip "$TEMP/RobloxPlayer.zip" "$TEMP" || return 1
     mv "$TEMP/RobloxPlayer.app" "$APP_DIR/Roblox.app" || return 1
     xattr -cr "$APP_DIR/Roblox.app" || true
-    codesign --remove-signature "$APP_DIR/Roblox.app/Contents/MacOS/RobloxPlayer" || return 1
 }
 
 install_modules() {
@@ -126,7 +125,13 @@ install_modules() {
     download_file "$MODULES_URL" "$TEMP/modules.zip" || return 1
     extract_zip "$TEMP/modules.zip" "$TEMP" || return 1
     
-    "$TEMP/Resources/Injector" \
+    # Auto-find the Resources directory
+    RES_PATH=$(find "$TEMP" -type d -name "Resources" | head -n 1)
+    if [ -z "$RES_PATH" ]; then RES_PATH="$TEMP"; fi
+
+    chmod +x "$RES_PATH/Injector" "$RES_PATH/Decompiler" "$RES_PATH/LuauLSP" 2>/dev/null || true
+
+    "$RES_PATH/Injector" \
         "$APP_DIR/Roblox.app/Contents/Resources/libOpiumware.dylib" \
         "$APP_DIR/Roblox.app/Contents/MacOS/libmimalloc.3.dylib" \
         --strip-codesig --all-yes >/dev/null 2>&1 || return 1
@@ -136,35 +141,32 @@ install_modules() {
     
     download_file "$UI_URL" "$TEMP/ui.zip" || return 1
     extract_zip "$TEMP/ui.zip" "$TEMP" || return 1
-    mv -f "$TEMP/Opiumware.app" "$APP_DIR/Opiumware.app" || return 1
-    codesign --force --deep --sign - "$APP_DIR/Opiumware.app" || return 1
+    
+    UI_APP=$(find "$TEMP" -maxdepth 2 -name "Opiumware.app" -type d | head -n 1)
+    mv -f "$UI_APP" "$APP_DIR/Opiumware.app" || return 1
+    codesign --force --deep --sign - "$APP_DIR/Opiumware.app" || true
     
     mkdir -p ~/Opiumware/{workspace,autoexec,themes,modules} || return 1
     mkdir -p ~/Opiumware/modules/{decompiler,LuauLSP} || return 1
-    mv -f "$TEMP/Resources/Decompiler" ~/Opiumware/modules/decompiler/Decompiler || return 1
-    mv -f "$TEMP/Resources/LuauLSP" ~/Opiumware/modules/LuauLSP/LuauLSP || return 1
+    mv -f "$RES_PATH/Decompiler" ~/Opiumware/modules/decompiler/Decompiler || return 1
+    mv -f "$RES_PATH/LuauLSP" ~/Opiumware/modules/LuauLSP/LuauLSP || return 1
 }
 
 main() {
     trap cleanup EXIT
     banner
     
-    if [ -w "/Applications" ]; then
-        APP_DIR="/Applications"
-    else
-        APP_DIR="$HOME/Applications"
-        mkdir -p "$APP_DIR"
-    fi
+    [ -w "/Applications" ] && APP_DIR="/Applications" || APP_DIR="$HOME/Applications"
+    mkdir -p "$APP_DIR"
 
     TEMP="$(mktemp -d)"
     run_step "Killing Processes" bash -c "killall -9 RobloxPlayer Opiumware 2>/dev/null || true"
 
     section "Fetching configuration"
-    # Fetching the version AND URLs from your GitHub file
-    raw_config=$(curl -s https://raw.githubusercontent.com/norbyv1/OpiumwareInstall/refs/heads/main/inst)
+    raw_config=$(curl -sL https://raw.githubusercontent.com/norbyv1/OpiumwareInstall/refs/heads/main/inst)
     version=$(echo "$raw_config" | grep -oE "version-[a-f0-9]+")
     
-    # Overwrite URLs if found in remote file
+    # Dynamic Link Updates
     remote_dylib=$(echo "$raw_config" | grep -oE 'DYLIB_URL="[^"]+"' | cut -d'"' -f2)
     remote_modules=$(echo "$raw_config" | grep -oE 'MODULES_URL="[^"]+"' | cut -d'"' -f2)
     remote_ui=$(echo "$raw_config" | grep -oE 'UI_URL="[^"]+"' | cut -d'"' -f2)
@@ -173,16 +175,10 @@ main() {
     [ -n "$remote_modules" ] && MODULES_URL="$remote_modules"
     [ -n "$remote_ui" ] && UI_URL="$remote_ui"
 
-    # OS Check for UI_URL legacy support
-    OS_VER="$(sw_vers -productVersion | awk -F. '{print $1}')"
-    if [ "$OS_VER" -lt 11 ]; then
-        UI_URL="https://x099xkycxe.ufs.sh/f/ar75CUBjeUn973Un5SgiSg2Cb3OUYDHqn5ozMk0fmAtRrcsx"
-    fi
-
     echo -e "${INFO} Version: ${BOLD}$version${NC}"
 
     run_step "Downloading Roblox" download_roblox
-    run_step "Installing Opiumware" install_modules
+    run_step "Installing modules" install_modules
 
     echo -e "\n${GREEN}${BOLD}Installation complete.${NC}"
     open "$APP_DIR/Roblox.app" || true
